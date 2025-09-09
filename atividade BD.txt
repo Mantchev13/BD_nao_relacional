@@ -1,0 +1,202 @@
+Questão 2 – Consulta com Filtro
+Liste todos os clientes que moram em Fortaleza.
+
+Resposta: db.clientes.find({cidade:"Fortaleza"})
+------
+Questão 3 – Consulta com $and
+Liste todos os clientes que moram em Fortaleza E possuem idade maior que 25 anos
+
+Resposta: db.clientes.find({
+  $and: [
+    { cidade: "Fortaleza" },
+    { idade: { $gt: 25 } }
+  ]
+})
+-------
+Questão 4 – Projeção
+Mostre apenas o nome e o preco dos produtos da categoria Periféricos
+
+Resposta: db.produtos.find({categoria: "Periféricos"})
+------
+Questão 5 – Consulta com $gte e $lte
+Liste todos os produtos cujo preço esteja entre 200 e 400 reais (inclusive).
+
+Resposta:
+db.produtos.find({
+preco: {$gte: 200, $lte:400}
+},{
+nome: true,
+preco:true,
+_id:false})
+-------
+Questão 6 – Consulta com $nor e $not
+Liste todos os clientes que não moram em Fortaleza e não possuem idade inferior a 20 anos.
+
+Resposta:
+db.clientes.find({
+$nor:[
+  {idade:{$lt:20}},
+  {cidade:"Fortaleza"}]},
+ {nome:true,
+idade:true,
+cidade:true,
+_id:false})
+
+db.clientes.find({
+  $and: [
+    { cidade: { $not: { $eq: "Fortaleza" } } },
+    { idade: { $not: { $lt: 20 } } }
+  ]
+},
+{nome:true,
+idade:true,
+cidade:true,
+_id:false})
+
+-----------
+Questão 7 – Consulta com $exists e $type
+Verifique se há clientes com o campo clienteVip. Depois, liste apenas os documentos em que o campo idade seja
+do tipo number.
+
+Resposta:
+db.clientes.find({ clienteVip: { $exists: true } })
+
+db.clientes.find({ idade: { $type: "number" } },
+                 {nome: true,
+		  idade:true,
+		_id:false})
+------------
+Questão 8 – Inserção de Novo Cliente
+Adicione um novo cliente chamado Jorge, 22 anos, morador de Salvador.
+
+Resposta:
+db.clientes.insertOne({ _id: 5, nome: "Jorge", idade: 22, cidade: "Salvador" })
+--------
+Questão 9 – Atualização
+O cliente Marcos mudou-se para Natal. Atualize sua cidade.
+
+Resposta:
+db.clientes.updateOne({nome: "Marcos"},{$set:{cidade:"Natal"}})
+------------
+Questão 10 – Atualização com $set e $inc
+Atualize o cliente chamado Lucas para incluir o campo status: "ativo". Em seguida, incremente sua idade em +1
+ano.
+
+Resposta:
+db.clientes.updateOne({nome: "Lucas"},{
+$set:{"status":"Ativo"}})
+
+db.clientes.updateOne({nome: "Lucas"},{
+$inc:{"idade":1}})
+
+-----
+
+Questão 11 – Atualização com replaceOne
+Substitua completamente o documento da cliente Julia por um novo documento:
+{ nome: "Julia", idade: 31, cidade: "Rio de Janeiro", clienteVip: true }
+
+Resposta:
+db.clientes.replaceOne({nome:"Julia"},{
+nome: "Julia", idade: 31, cidade: "Rio de Janeiro", clienteVip: true})
+------
+Questão 12 – Atualização com $rename e $unset
+Renomeie o campo preco para valor em todos os produtos. Depois, remova o campo categoria dos documentos
+
+Resposta:
+db.produtos.updateMany(
+  {},
+  { $rename: { "preco": "valor" } })
+
+db.produtos.updateMany({},
+                       {$unset:{"categoria":""}})
+---------
+Questão 13 – Exclusão
+Remova o produto FIFA 25 do catálogo.
+
+Resposta:
+db.produtos.deleteOne({nome:"FIFA 25"})
+-------------
+Questão 14 – Operadores Lógicos
+Liste os clientes que são de São Paulo OU de Recife.
+
+Resposta:
+db.clientes.find({
+  $or: [
+    { cidade: "São Paulo" },
+    { cidade: "Recife" }
+  ]
+})
+-------------
+Questão 15 – Agregação com $lookup
+Liste as vendas com os dados completos do produto comprado
+
+Resposta:
+db.vendas.aggregate([
+  {
+    $lookup: {
+      from: "produtos",           
+      localField: "produtoId",    
+      foreignField: "_id",        
+      as: "dadosProduto"          
+    }}])
+-----------------
+Questão 16 – Agrupamento
+Calcule o total de produtos vendidos por categoria.
+
+Resposta:
+db.vendas.aggregate([
+  {
+    $lookup: {
+      from: "produtos",
+      localField: "produtoId",
+      foreignField: "_id",
+      as: "produto"
+    }
+  },
+  {
+    $unwind: "$produto"  // transforma o array de produto em objeto único
+  },
+  {
+    $group: {
+      _id: "$produto.categoria",  // agrupa por categoria do produto
+      totalVendidos: { $sum: "$quantidade" }  // soma as quantidades vendidas
+    }}])
+---------------
+Questão 17 – Agregação com $lookup e $group
+Liste as vendas e calcule o total de produtos vendidos por categoria
+
+Resposta:
+db.vendas.aggregate([
+  {
+    $lookup: {
+      from: "produtos",
+      localField: "produtoId",
+      foreignField: "_id",
+      as: "produto"
+    }
+  },
+  { $unwind: "$produto" },
+  {
+    $group: {
+      _id: "$produto.categoria",      
+      totalProdutosVendidos: { $sum: "$quantidade" }, 
+      vendas: { $push: "$$ROOT" }      
+    }}])
+--------------
+Questão 18 – Paginação
+Liste os produtos ordenados pelo preço em ordem decrescente, exibindo apenas os 2 produtos mais caros
+
+Resposta:
+db.produtos.find()
+  .sort({ preco: -1 })   
+  .limit(2) 
+------------------
+Questão 19 – Paginação com skip
+Liste os produtos ordenados pelo valor (antes chamado de preco) em ordem decrescente, exibindo apenas do 3º
+ao 5º produto mais caro.
+
+Resposta:
+db.produtos.find()
+  .sort({ valor: -1 })   
+  .skip(2)            
+  .limit(3)
